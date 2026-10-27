@@ -242,4 +242,57 @@ $("#themeBtn").addEventListener("click", () => {
   setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
 });
 
+/* Cielo estrellado */
+(function sky() {
+  const cv = $("#sky");
+  const ctx = cv.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let stars = [], shooting = null, W = 0, H = 0;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.min(320, Math.round((W * H) / 5500));
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 1.3 + 0.2,
+      a: Math.random() * Math.PI * 2,
+      s: Math.random() * 0.02 + 0.005,
+      hue: Math.random() < 0.15 ? 40 : Math.random() < 0.2 ? 210 : 0,
+    }));
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      s.a += s.s;
+      const o = 0.55 + 0.45 * Math.sin(s.a);
+      ctx.fillStyle = s.hue ? `hsla(${s.hue},90%,85%,${o})` : `rgba(255,255,255,${o})`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill();
+    }
+    if (!still) {
+      if (!shooting && Math.random() < 0.004) {
+        shooting = { x: Math.random() * W * 0.8, y: Math.random() * H * 0.4, vx: 9, vy: 4, life: 1 };
+      }
+      if (shooting) {
+        const g = ctx.createLinearGradient(shooting.x, shooting.y, shooting.x - shooting.vx * 9, shooting.y - shooting.vy * 9);
+        g.addColorStop(0, `rgba(255,255,255,${shooting.life})`);
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.strokeStyle = g; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(shooting.x, shooting.y);
+        ctx.lineTo(shooting.x - shooting.vx * 9, shooting.y - shooting.vy * 9); ctx.stroke();
+        shooting.x += shooting.vx; shooting.y += shooting.vy; shooting.life -= 0.015;
+        if (shooting.life <= 0 || shooting.x > W) shooting = null;
+      }
+      requestAnimationFrame(frame);
+    }
+  }
+
+  addEventListener("resize", () => { resize(); if (still) frame(); });
+  resize();
+  frame();
+})();
+
 render();
